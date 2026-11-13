@@ -110,8 +110,8 @@ function Results({ likes, onRestart }) {
           </a>
         ))}
         {topColours[0] && (
-          <a href={nextSearchUrl(`mens ${topColours[0][0].toLowerCase()} ${season.key === 'aw' ? 'coat' : 'shirt'}`)} target="_blank" rel="noreferrer">
-            {topColours[0][0].toLowerCase()} {season.key === 'aw' ? 'coats' : 'shirts'} →
+          <a href={nextSearchUrl(`mens ${topColours[0][0].toLowerCase()} ${season.key === 'aw' ? 'jumper' : 'shirt'}`)} target="_blank" rel="noreferrer">
+            {topColours[0][0].toLowerCase()} {season.key === 'aw' ? 'jumpers' : 'shirts'} →
           </a>
         )}
       </div>
