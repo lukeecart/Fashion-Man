@@ -60,6 +60,14 @@ export const STYLES = {
       ss: ['mens light wash denim jacket', 'mens denim overshirt', 'mens wide leg trousers', 'mens canvas trainers'],
     },
   },
+  outerwear: {
+    name: 'Coats & Jackets',
+    blurb: 'Bombers, gilets, field jackets and smart coats. Your outfit starts with the outer layer.',
+    picks: {
+      aw: ['mens wool overcoat', 'mens bomber jacket', 'mens padded jacket', 'mens field jacket'],
+      ss: ['mens trench coat', 'mens harrington jacket', 'mens lightweight bomber', 'mens shacket'],
+    },
+  },
 };
 
 // tone: dark | light | bold | earthy. items: [garment, colour].
@@ -114,6 +122,37 @@ export const OUTFITS = [
   o(42, '1785088559111-44034aed38d1', 'Sage Blazer & Black Tee', 'blazer', 'bold', [['blazer', 'Sage'], ['t-shirt', 'Black']]),
   o(43, '1611000784352-a67afb821041', 'Grey Blazer & Black Tee', 'blazer', 'dark', [['blazer', 'Grey'], ['t-shirt', 'Black'], ['trainers', 'White']]),
   o(44, '1662758949073-56537345d85d', 'Rust Overshirt Co-ord', 'earthy', 'bold', [['overshirt', 'Rust'], ['trousers', 'Rust']]),
+  o(45, '1620834767726-61b1986287ff', 'Cream Trucker Jacket & Striped Shirt', 'overshirt', 'light', [['trucker jacket', 'Cream'], ['striped shirt', 'Black'], ['trousers', 'Black']]),
+  o(46, '1536243298747-ea8874136d64', 'Black Leather Jacket & Black Jeans', 'outerwear', 'dark', [['leather jacket', 'Black'], ['jeans', 'Black'], ['boots', 'Black']]),
+  o(47, '1713943189183-c5a9dde63b45', 'Dark Denim Jacket & Red Tee', 'denim', 'bold', [['denim jacket', 'Indigo'], ['t-shirt', 'Red'], ['jeans', 'Black']]),
+  o(48, '1642886513308-d21acc15057d', 'Belted Black Coat', 'outerwear', 'dark', [['overcoat', 'Black'], ['jeans', 'Black'], ['boots', 'Black']]),
+  o(49, '1581381685617-4dc270458aa6', 'Grey Jacket & Black Trousers', 'outerwear', 'light', [['jacket', 'Grey'], ['t-shirt', 'White'], ['trousers', 'Black']]),
+  o(50, '1636590416708-68a4867918f1', 'Grey Coat, White Tee & Jeans', 'outerwear', 'light', [['overcoat', 'Grey'], ['t-shirt', 'White'], ['jeans', 'Light Wash'], ['trainers', 'White']]),
+  o(51, '1619603364937-8d7af41ef206', 'Camel Coat & Brown Roll Neck', 'earthy', 'earthy', [['overcoat', 'Camel'], ['roll neck', 'Brown']]),
+  o(52, '1737508945707-ebdccee97cc5', 'Stone Trench Coat', 'outerwear', 'light', [['trench coat', 'Stone'], ['trousers', 'Stone']]),
+  o(53, '1602525582399-7ef5f604ff7e', 'Black Bomber & White Tee', 'outerwear', 'dark', [['bomber jacket', 'Black'], ['t-shirt', 'White']]),
+  o(54, '1585418244972-54930a08ce24', 'Navy Padded Jacket & Grey Jumper', 'outerwear', 'dark', [['padded jacket', 'Navy'], ['jumper', 'Grey']]),
+  o(55, '1629353689974-af4d5c70440f', 'Green Field Jacket', 'outerwear', 'bold', [['field jacket', 'Green'], ['jeans', 'Black']]),
+  o(56, '1788500304842-710d18642b77', 'Black Jacket & White Shirt', 'minimal', 'dark', [['jacket', 'Black'], ['shirt', 'White'], ['trousers', 'Black']]),
+  o(57, '1600574691453-499962cc0611', 'Denim Jacket & Graphic Tee', 'denim', 'light', [['denim jacket', 'Light Wash'], ['t-shirt', 'White'], ['jeans', 'Black']]),
+  o(58, '1764593008673-af6056758b4a', 'Brown Jacket & Sage Wide Trousers', 'earthy', 'bold', [['jacket', 'Brown'], ['wide leg trousers', 'Sage']]),
+  o(59, '1772817565731-cfae0f2c1552', 'Blue Chore Jacket & Jeans', 'denim', 'bold', [['chore jacket', 'Blue'], ['shirt', 'Black'], ['jeans', 'Indigo']]),
+  o(60, '1762708546645-65ee9ccedfae', 'Pink Oxford Shirt', 'preppy', 'light', [['oxford shirt', 'Pink']]),
+  o(61, '1506634572416-48cdfe530110', 'Burgundy Jumper & Black Trousers', 'knitwear', 'bold', [['jumper', 'Burgundy'], ['trousers', 'Black']]),
+  o(62, '1554936823-dc697a3083ff', 'Black Textured Knit', 'knitwear', 'dark', [['jumper', 'Black']]),
+  o(63, '1597143720583-bbbf44a6677d', 'Striped Jumper & Jeans', 'preppy', 'bold', [['striped jumper', 'Navy'], ['jeans', 'Indigo']]),
+  o(64, '1599032909736-0155c1d43a6c', 'Plum V-Neck Over Shirt', 'preppy', 'dark', [['v-neck jumper', 'Burgundy'], ['shirt', 'White'], ['jeans', 'Black']]),
+  o(65, '1615851947829-3641ababa187', 'Rust Stripe Jumper', 'knitwear', 'bold', [['striped jumper', 'Rust']]),
+  o(66, '1604073536770-8a33e332f830', 'Pink Overshirt & Brown Trousers', 'overshirt', 'light', [['overshirt', 'Pink'], ['t-shirt', 'Grey'], ['trousers', 'Brown']]),
+  o(67, '1614533835924-043a0974d1ad', 'Black Polo & Khaki Chinos', 'preppy', 'dark', [['polo', 'Black'], ['chinos', 'Khaki']]),
+  o(68, '1634136912882-61fd36144a3a', 'Mustard Jacket & Grey Tee', 'outerwear', 'bold', [['harrington jacket', 'Mustard'], ['t-shirt', 'Grey'], ['jeans', 'Indigo']]),
+  o(69, '1642259403032-45d7d3997b36', 'Black Shirt & Jeans', 'minimal', 'dark', [['shirt', 'Black'], ['jeans', 'Light Wash']]),
+  o(70, '1787436025288-874f0696fcca', 'Grey Coat & Scarf', 'outerwear', 'light', [['overcoat', 'Grey'], ['scarf', 'Grey'], ['trousers', 'Grey']]),
+  o(71, '1761126085595-c9b8a83912cd', 'Brown Shirt & White Trousers', 'earthy', 'earthy', [['shirt', 'Brown'], ['trousers', 'White']]),
+  o(72, '1701318227205-227aee07476c', 'Brown Henley & Grey Trousers', 'earthy', 'dark', [['henley', 'Brown'], ['trousers', 'Grey']]),
+  o(73, '1665832102183-b232574131ff', 'Tan Coat & Black Roll Neck', 'earthy', 'earthy', [['overcoat', 'Tan'], ['roll neck', 'Black']]),
+  o(74, '1630952588138-941bc6baf18c', 'White Polo & Black Trousers', 'minimal', 'light', [['polo', 'White'], ['trousers', 'Black'], ['loafers', 'Black']]),
+  o(75, '1620834767673-19f69709a716', 'Light Grey Overshirt & Trousers', 'overshirt', 'light', [['overshirt', 'Grey'], ['trousers', 'Grey'], ['trainers', 'White']]),
 ];
 
 // Colours used for the little swatches on each card.
@@ -123,6 +162,7 @@ export const SWATCH = {
   Camel: '#c19a6b', Oatmeal: '#d9ccb4', Khaki: '#a89a6e', Olive: '#5b5a36', 'Light Blue': '#a9c7e8',
   Beige: '#c8b89a', Cream: '#efe6d2', Blue: '#5b84c4', Grey: '#808080', Rust: '#8a3b24',
   Mustard: '#c9a227', Green: '#2f5a3c', Charcoal: '#36454f', Orange: '#d9541e', Sage: '#8a9a7b',
+  Burgundy: '#6d1a2b',
 };
 
 // Upcoming season: Aug–Jan shop Autumn/Winter, Feb–Jul shop Spring/Summer.
