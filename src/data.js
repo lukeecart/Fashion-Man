@@ -1,10 +1,11 @@
 // Outfit photos are from Unsplash (free to use). Every look is modern smart
-// casual (no suits). Each style has 3 looks: dark/neutral, light/earthy, bold.
+// casual (no suits). Each outfit lists its pieces (garment + colour); the model
+// learns from these, and they become Next search links in the suggestions.
 const img = (id) => `https://images.unsplash.com/photo-${id}?w=800&q=80&fit=crop`;
 
 export const STYLES = {
   blazer: {
-    name: 'Blazer & Trainers',
+    name: 'Smart Blazers',
     blurb: 'An unstructured blazer over a tee or shirt, with jeans or chinos and clean trainers.',
     picks: {
       aw: ['mens unstructured blazer', 'mens textured blazer', 'mens slim jeans', 'mens leather trainers'],
@@ -13,17 +14,17 @@ export const STYLES = {
   },
   knitwear: {
     name: 'Modern Knitwear',
-    blurb: 'Roll necks, crew neck jumpers and textured knits over relaxed trousers.',
+    blurb: 'Roll necks, crew neck jumpers and cardigans over relaxed trousers.',
     picks: {
-      aw: ['mens roll neck jumper', 'mens merino crew neck', 'mens textured knit jumper', 'mens relaxed chinos'],
+      aw: ['mens roll neck jumper', 'mens merino crew neck', 'mens cardigan', 'mens relaxed chinos'],
       ss: ['mens cotton jumper', 'mens knitted polo', 'mens lightweight knit', 'mens tapered chinos'],
     },
   },
   overshirt: {
     name: 'Overshirts & Layers',
-    blurb: 'Overshirts and shackets layered over tees and roll necks. Easy, modern layering.',
+    blurb: 'Overshirts, chore jackets and coats layered over tees and roll necks.',
     picks: {
-      aw: ['mens check overshirt', 'mens wool overshirt', 'mens shacket', 'mens cargo trousers'],
+      aw: ['mens check overshirt', 'mens wool overshirt', 'mens chore jacket', 'mens cargo trousers'],
       ss: ['mens linen overshirt', 'mens cotton overshirt', 'mens heavyweight t-shirt', 'mens relaxed trousers'],
     },
   },
@@ -37,7 +38,7 @@ export const STYLES = {
   },
   preppy: {
     name: 'Modern Preppy',
-    blurb: 'Polos, printed shirts and chinos with a pop of colour. Clean-cut and fresh.',
+    blurb: 'Polos, printed shirts, cardigans and chinos with a pop of colour.',
     picks: {
       aw: ['mens long sleeve polo', 'mens knitted polo', 'mens chinos', 'mens loafers'],
       ss: ['mens polo shirt', 'mens printed shirt', 'mens white chinos', 'mens suede loafers'],
@@ -45,41 +46,83 @@ export const STYLES = {
   },
   earthy: {
     name: 'Earth Tones & Suede',
-    blurb: 'Suede jackets, rust, tan and cream. Warm textures with a modern cut.',
+    blurb: 'Suede, leather, rust, tan and camel. Warm textures with a modern cut.',
     picks: {
-      aw: ['mens suede jacket', 'mens corduroy overshirt', 'mens tan chinos', 'mens suede boots'],
+      aw: ['mens suede jacket', 'mens camel coat', 'mens tan chinos', 'mens suede boots'],
       ss: ['mens suede harrington', 'mens cream trousers', 'mens linen shirt', 'mens suede trainers'],
+    },
+  },
+  denim: {
+    name: 'Smart Denim',
+    blurb: 'Denim shirts, jackets and gilets worn with clean lines. Relaxed but considered.',
+    picks: {
+      aw: ['mens denim jacket', 'mens denim shirt', 'mens dark jeans', 'mens harrington jacket'],
+      ss: ['mens light wash denim jacket', 'mens denim overshirt', 'mens wide leg trousers', 'mens canvas trainers'],
     },
   },
 };
 
+// tone: dark | light | bold | earthy. items: [garment, colour].
+const o = (id, photo, title, style, tone, items) => ({
+  id, img: img(photo), title, style, tone,
+  items: items.map(([garment, colour]) => ({ garment, colour })),
+  colours: [...new Set(items.map(([, c]) => c))],
+});
+
 export const OUTFITS = [
-  { id: 1, img: img('1774813958486-4c180dcda729'), title: 'Navy Blazer & Jeans', style: 'blazer', colours: ['Navy', 'White', 'Denim'] },
-  { id: 2, img: img('1642886512785-b5fee9faad7f'), title: 'Red Roll Neck & Black Trousers', style: 'knitwear', colours: ['Red', 'Black'] },
-  { id: 3, img: img('1719418730257-a9da9282da37'), title: 'Stone Overshirt', style: 'overshirt', colours: ['Stone', 'Grey'] },
-  { id: 4, img: img('1621072156002-e2fccdc0b176'), title: 'White Shirt, Black Trousers', style: 'minimal', colours: ['White', 'Black'] },
-  { id: 5, img: img('1600364768634-797baa6a8af3'), title: 'Pink Polo & Navy Jeans', style: 'preppy', colours: ['Pink', 'Navy'] },
-  { id: 6, img: img('1617114919297-3c8ddb01f599'), title: 'Suede Jacket & Jeans', style: 'earthy', colours: ['Tan', 'Black', 'Denim'] },
-  { id: 7, img: img('1552374196-1ab2a1c593e8'), title: 'Camel Blazer & Stone Jeans', style: 'blazer', colours: ['Camel', 'White', 'Stone'] },
-  { id: 8, img: img('1618418405974-4cd2be167e73'), title: 'Oatmeal Jumper & Chinos', style: 'knitwear', colours: ['Beige', 'Cream'] },
-  { id: 9, img: img('1662578354822-f8b43ecaeaaa'), title: 'Check Overshirt & Olive Trousers', style: 'overshirt', colours: ['Pink', 'Grey', 'Olive'] },
-  { id: 10, img: img('1624835589323-442670703bc0'), title: 'Light Blue Shirt & Navy Trousers', style: 'minimal', colours: ['Light Blue', 'Navy'] },
-  { id: 11, img: img('1788500304857-256ab412295c'), title: 'Navy Polo & Chinos', style: 'preppy', colours: ['Navy', 'Beige'] },
-  { id: 12, img: img('1615538363919-8e5724f16d20'), title: 'Brown Jacket & Cream Trousers', style: 'earthy', colours: ['Brown', 'Cream'] },
-  { id: 13, img: img('1622450180332-3da1126f10a4'), title: 'Cornflower Blazer & Grey Chinos', style: 'blazer', colours: ['Blue', 'White', 'Grey'] },
-  { id: 14, img: img('1790270492019-8cd019ee4cf6'), title: 'Black Crew Neck & Olive Trousers', style: 'knitwear', colours: ['Black', 'Olive'] },
-  { id: 15, img: img('1633199518179-55ea38bb9f0e'), title: 'Roll Neck & Check Overshirt', style: 'overshirt', colours: ['Black', 'Brown', 'Khaki'] },
-  { id: 16, img: img('1616804827035-f4aa814c14ac'), title: 'White Shirt & Jeans', style: 'minimal', colours: ['White', 'Denim'] },
-  { id: 17, img: img('1626557981101-aae6f84aa6ff'), title: 'Print Shirt & White Chinos', style: 'preppy', colours: ['White', 'Light Blue'] },
-  { id: 18, img: img('1540907389453-f0e0a8dc70eb'), title: 'Rust Overshirt & Khaki Trousers', style: 'earthy', colours: ['Rust', 'Khaki'] },
+  o(1, '1774813958486-4c180dcda729', 'Navy Blazer & Jeans', 'blazer', 'dark', [['blazer', 'Navy'], ['shirt', 'White'], ['jeans', 'Indigo']]),
+  o(2, '1642886512785-b5fee9faad7f', 'Red Roll Neck & Black Trousers', 'knitwear', 'bold', [['roll neck', 'Red'], ['trousers', 'Black'], ['chelsea boots', 'Black']]),
+  o(3, '1719418730257-a9da9282da37', 'Stone Overshirt', 'overshirt', 'light', [['overshirt', 'Stone'], ['t-shirt', 'Black']]),
+  o(4, '1621072156002-e2fccdc0b176', 'White Shirt, Black Trousers', 'minimal', 'dark', [['shirt', 'White'], ['trousers', 'Black']]),
+  o(5, '1600364768634-797baa6a8af3', 'Pink Polo & Navy Jeans', 'preppy', 'bold', [['polo', 'Pink'], ['jeans', 'Indigo']]),
+  o(6, '1617114919297-3c8ddb01f599', 'Suede Jacket & Jeans', 'earthy', 'earthy', [['suede jacket', 'Tan'], ['shirt', 'Black'], ['jeans', 'Light Wash'], ['boots', 'Brown']]),
+  o(7, '1552374196-1ab2a1c593e8', 'Camel Blazer & Stone Chinos', 'blazer', 'light', [['blazer', 'Camel'], ['t-shirt', 'White'], ['chinos', 'Stone'], ['trainers', 'White']]),
+  o(8, '1618418405974-4cd2be167e73', 'Oatmeal Jumper & Chinos', 'knitwear', 'light', [['jumper', 'Oatmeal'], ['chinos', 'Khaki'], ['trainers', 'White']]),
+  o(9, '1662578354822-f8b43ecaeaaa', 'Check Overshirt & Olive Trousers', 'overshirt', 'bold', [['check overshirt', 'Pink'], ['t-shirt', 'White'], ['trousers', 'Olive']]),
+  o(10, '1624835589323-442670703bc0', 'Light Blue Shirt & Navy Trousers', 'minimal', 'light', [['shirt', 'Light Blue'], ['trousers', 'Navy']]),
+  o(11, '1788500304857-256ab412295c', 'Navy Polo & Chinos', 'preppy', 'dark', [['polo', 'Navy'], ['chinos', 'Beige']]),
+  o(12, '1615538363919-8e5724f16d20', 'Brown Jacket & Cream Trousers', 'earthy', 'earthy', [['jacket', 'Brown'], ['trousers', 'Cream'], ['boots', 'Brown']]),
+  o(13, '1622450180332-3da1126f10a4', 'Cornflower Blazer & Grey Chinos', 'blazer', 'bold', [['blazer', 'Blue'], ['shirt', 'White'], ['chinos', 'Grey'], ['loafers', 'Brown']]),
+  o(14, '1790270492019-8cd019ee4cf6', 'Black Crew Neck & Olive Trousers', 'knitwear', 'dark', [['jumper', 'Black'], ['trousers', 'Olive']]),
+  o(15, '1633199518179-55ea38bb9f0e', 'Roll Neck & Check Overshirt', 'overshirt', 'dark', [['roll neck', 'Black'], ['check overshirt', 'Brown']]),
+  o(16, '1616804827035-f4aa814c14ac', 'White Shirt & Jeans', 'minimal', 'light', [['shirt', 'White'], ['jeans', 'Indigo']]),
+  o(17, '1626557981101-aae6f84aa6ff', 'Print Shirt & White Chinos', 'preppy', 'light', [['printed shirt', 'Light Blue'], ['chinos', 'White'], ['trainers', 'White']]),
+  o(18, '1540907389453-f0e0a8dc70eb', 'Rust Overshirt & Khaki Trousers', 'earthy', 'bold', [['overshirt', 'Rust'], ['trousers', 'Khaki'], ['boots', 'Brown']]),
+  o(19, '1653812564600-56291b1add3b', 'Mustard Chore Jacket', 'overshirt', 'bold', [['chore jacket', 'Mustard'], ['trousers', 'Black']]),
+  o(20, '1724335141947-a63578d5d118', 'Cream Chore Jacket & White Tee', 'overshirt', 'light', [['chore jacket', 'Cream'], ['t-shirt', 'White']]),
+  o(21, '1700059425529-411240553003', 'Tan Chore Jacket & Black Trousers', 'earthy', 'earthy', [['chore jacket', 'Tan'], ['t-shirt', 'Navy'], ['trousers', 'Black']]),
+  o(22, '1786141251777-c48309702838', 'Striped Cardigan & White Tee', 'preppy', 'light', [['cardigan', 'Cream'], ['t-shirt', 'White'], ['trousers', 'Navy']]),
+  o(23, '1791308835255-7612e1a8d419', 'Green Cardigan & White Tee', 'knitwear', 'bold', [['cardigan', 'Green'], ['t-shirt', 'White']]),
+  o(24, '1627686011747-74adda3d2343', 'Cream Linen Shirt & Black Trousers', 'minimal', 'light', [['linen shirt', 'Cream'], ['trousers', 'Black']]),
+  o(25, '1620228922597-cca58f177310', 'Tan Leather Jacket & Jeans', 'earthy', 'earthy', [['leather jacket', 'Tan'], ['t-shirt', 'White'], ['jeans', 'Indigo'], ['trainers', 'White']]),
+  o(26, '1621335829175-95f437384d7c', 'Grey Check Blazer & Dark Jeans', 'blazer', 'light', [['check blazer', 'Grey'], ['shirt', 'White'], ['jeans', 'Indigo'], ['loafers', 'Brown']]),
+  o(27, '1741892600043-141ab7357735', 'Red Jumper & Dusty Pink Trousers', 'knitwear', 'bold', [['jumper', 'Red'], ['trousers', 'Pink']]),
+  o(28, '1581376781301-e95a3ae2a33f', 'Cream Knit & Charcoal Trousers', 'knitwear', 'light', [['jumper', 'Cream'], ['trousers', 'Charcoal']]),
+  o(29, '1637868841955-4a1dfb0a1545', 'Orange Jumper & Chinos', 'knitwear', 'bold', [['jumper', 'Orange'], ['chinos', 'Beige'], ['loafers', 'Brown']]),
+  o(30, '1619659712390-c0ffe7eec650', 'Black Harrington & Jeans', 'denim', 'dark', [['harrington jacket', 'Black'], ['jeans', 'Light Wash']]),
+  o(31, '1776007087050-dbc004f5d17c', 'Green Plaid Overshirt & Cargos', 'overshirt', 'bold', [['check overshirt', 'Green'], ['t-shirt', 'Black'], ['cargo trousers', 'Black']]),
+  o(32, '1580968744774-74b3888b402d', 'Denim Shirt & Grey Cargos', 'denim', 'light', [['denim shirt', 'Blue'], ['cargo trousers', 'Grey']]),
+  o(33, '1516257984-b1b4d707412e', 'Light Denim Jacket & Print Shirt', 'denim', 'light', [['denim jacket', 'Light Wash'], ['printed shirt', 'White']]),
+  o(34, '1738543737166-05c5145dd1b8', 'Denim Gilet & Wide Tan Trousers', 'denim', 'bold', [['denim gilet', 'Light Wash'], ['wide leg trousers', 'Tan']]),
+  o(35, '1792793534587-aab009facb8c', 'Denim Shirt & Black Tee', 'denim', 'dark', [['denim shirt', 'Light Wash'], ['t-shirt', 'Black'], ['jeans', 'Light Wash']]),
+  o(36, '1622519407650-3df9883f76a5', 'Black Tee & Jeans', 'denim', 'dark', [['t-shirt', 'Black'], ['jeans', 'Light Wash']]),
+  o(37, '1584865288642-42078afe6942', 'White Shirt & Cropped Black Trousers', 'minimal', 'dark', [['shirt', 'White'], ['trousers', 'Black'], ['trainers', 'White']]),
+  o(38, '1791573391881-98b6b072e7ff', 'Black Polo & Beige Trousers', 'preppy', 'dark', [['polo', 'Black'], ['trousers', 'Beige']]),
+  o(39, '1787045098569-2e17ae871df4', 'Grey Overcoat & Beige Trousers', 'overshirt', 'light', [['overcoat', 'Grey'], ['trousers', 'Beige'], ['boots', 'Brown']]),
+  o(40, '1599542829769-9ab0c324b4dd', 'Black Roll Neck & Stone Trousers', 'knitwear', 'dark', [['roll neck', 'Black'], ['trousers', 'Stone']]),
+  o(41, '1559582798-678dfc71ccd8', 'Camel Overcoat & Black Jeans', 'earthy', 'earthy', [['overcoat', 'Camel'], ['jeans', 'Black'], ['trainers', 'White']]),
+  o(42, '1785088559111-44034aed38d1', 'Sage Blazer & Black Tee', 'blazer', 'bold', [['blazer', 'Sage'], ['t-shirt', 'Black']]),
+  o(43, '1611000784352-a67afb821041', 'Grey Blazer & Black Tee', 'blazer', 'dark', [['blazer', 'Grey'], ['t-shirt', 'Black'], ['trainers', 'White']]),
+  o(44, '1662758949073-56537345d85d', 'Rust Overshirt Co-ord', 'earthy', 'bold', [['overshirt', 'Rust'], ['trousers', 'Rust']]),
 ];
 
 // Colours used for the little swatches on each card.
 export const SWATCH = {
-  Navy: '#1f2a44', White: '#f5f5f5', Camel: '#c19a6b', Stone: '#d6cfc4', Black: '#111',
-  Brown: '#6b4a2f', Denim: '#3b5b85', Blue: '#5b84c4', Tan: '#b5835a', 'Light Blue': '#a9c7e8',
-  Grey: '#808080', Red: '#a3172a', Beige: '#c8b89a', Cream: '#efe6d2', Pink: '#f2b8c0',
-  Khaki: '#a89a6e', Rust: '#8a3b24', Olive: '#5b5a36',
+  Navy: '#1f2a44', White: '#f5f5f5', Indigo: '#2b3a5c', Red: '#a3172a', Black: '#111',
+  Stone: '#d6cfc4', Pink: '#e8a9b3', Tan: '#b5835a', 'Light Wash': '#8eaed1', Brown: '#6b4a2f',
+  Camel: '#c19a6b', Oatmeal: '#d9ccb4', Khaki: '#a89a6e', Olive: '#5b5a36', 'Light Blue': '#a9c7e8',
+  Beige: '#c8b89a', Cream: '#efe6d2', Blue: '#5b84c4', Grey: '#808080', Rust: '#8a3b24',
+  Mustard: '#c9a227', Green: '#2f5a3c', Charcoal: '#36454f', Orange: '#d9541e', Sage: '#8a9a7b',
 };
 
 // Upcoming season: Aug–Jan shop Autumn/Winter, Feb–Jul shop Spring/Summer.
@@ -92,3 +135,5 @@ export function upcomingSeason(date = new Date()) {
 
 export const nextSearchUrl = (term) =>
   `https://www.next.co.uk/search?w=${encodeURIComponent(term)}`;
+
+export const itemSearchTerm = ({ garment, colour }) => `mens ${colour.toLowerCase()} ${garment}`;

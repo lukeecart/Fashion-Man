@@ -1,7 +1,13 @@
 import { useState } from 'react';
 import { AnimatePresence, motion, useMotionValue, useTransform } from 'framer-motion';
-import { OUTFITS, STYLES, SWATCH, upcomingSeason, nextSearchUrl } from './data';
+import { OUTFITS, STYLES, SWATCH, upcomingSeason, nextSearchUrl, itemSearchTerm } from './data';
+import {
+  loadModel, saveModel, clearModel, learn, pickNext, suggest,
+  topFeatures, styleAffinity,
+} from './model';
 import './App.css';
+
+const SESSION_LENGTH = 20;
 
 const cardVariants = {
   enter: { scale: 0.95, opacity: 0, y: 10 },
@@ -13,6 +19,24 @@ const cardVariants = {
     transition: { duration: 0.3 },
   }),
 };
+
+// Start a session: pick the first card and queue up the one behind it.
+function startSession(model) {
+  const current = pickNext(model, OUTFITS, new Set(), 0);
+  const queued = pickNext(model, OUTFITS, new Set([current.id]), 1 / SESSION_LENGTH);
+  return { model, current, queued, swiped: [] };
+}
+
+function Swatches({ colours }) {
+  return (
+    <div className="swatches">
+      {colours.map((c) => (
+        <span key={c} className="swatch" style={{ background: SWATCH[c] }} title={c} />
+      ))}
+      <span className="swatch-label">{colours.join(' · ')}</span>
+    </div>
+  );
+}
 
 function SwipeCard({ outfit, onSwipe }) {
   const x = useMotionValue(0);
@@ -43,129 +67,151 @@ function SwipeCard({ outfit, onSwipe }) {
       <div className="card-info">
         <span className="tag">{STYLES[outfit.style].name}</span>
         <h2>{outfit.title}</h2>
-        <div className="swatches">
-          {outfit.colours.map((c) => (
-            <span key={c} className="swatch" style={{ background: SWATCH[c] }} title={c} />
-          ))}
-          <span className="swatch-label">{outfit.colours.join(' · ')}</span>
-        </div>
+        <Swatches colours={outfit.colours} />
       </div>
     </motion.div>
   );
 }
 
-function Results({ likes, onRestart }) {
-  const season = upcomingSeason();
-
-  if (likes.length === 0) {
-    return (
-      <div className="results">
-        <h1>No matches yet</h1>
-        <p>You didn't like any of the outfits. Have another go?</p>
-        <button className="primary" onClick={onRestart}>Start again</button>
+function Suggestion({ outfit, match, reasons }) {
+  return (
+    <div className="suggestion">
+      <div className="suggestion-img">
+        <img src={outfit.img} alt={outfit.title} />
+        <span className="match">{Math.round(match * 100)}% match</span>
       </div>
-    );
-  }
+      <div className="suggestion-body">
+        <span className="tag dark">{STYLES[outfit.style].name}</span>
+        <h3>{outfit.title}</h3>
+        <p className="why">
+          {reasons.length
+            ? <>Because you like <strong>{reasons.join(', ')}</strong></>
+            : 'A wildcard to test your taste'}
+        </p>
+        <p className="shop-label">Shop the look at Next</p>
+        <div className="shop-links">
+          {outfit.items.map((item) => (
+            <a key={item.garment + item.colour} href={nextSearchUrl(itemSearchTerm(item))} target="_blank" rel="noreferrer">
+              <span className="swatch" style={{ background: SWATCH[item.colour] }} />
+              {item.colour} {item.garment} →
+            </a>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
-  const styleCount = {};
-  const colourCount = {};
-  likes.forEach((o) => {
-    styleCount[o.style] = (styleCount[o.style] || 0) + 1;
-    o.colours.forEach((c) => (colourCount[c] = (colourCount[c] || 0) + 1));
-  });
-  const ranked = Object.entries(styleCount).sort((a, b) => b[1] - a[1]);
-  const topStyle = STYLES[ranked[0][0]];
-  const topColours = Object.entries(colourCount).sort((a, b) => b[1] - a[1]).slice(0, 4);
+function Results({ model, swiped, onAgain, onReset }) {
+  const season = upcomingSeason();
+  const picks = suggest(model, OUTFITS, new Set(swiped), 2);
+  const affinity = styleAffinity(model).slice(0, 4);
+  const colours = topFeatures(model, 'colour');
+  const garments = topFeatures(model, 'garment', 5);
+  const topStyle = STYLES[affinity[0].key];
 
   return (
     <div className="results">
-      <p className="eyebrow">Your style is</p>
-      <h1>{topStyle.name}</h1>
-      <p className="blurb">{topStyle.blurb}</p>
+      <p className="eyebrow">Learned from {model.swipes} swipes</p>
+      <h1>Your 2 outfits</h1>
 
+      {picks.map((p) => <Suggestion key={p.outfit.id} {...p} />)}
+
+      <h3>What I've learned about you</h3>
       <div className="bars">
-        {ranked.map(([key, n]) => (
+        {affinity.map(({ key, p }) => (
           <div key={key} className="bar-row">
             <span>{STYLES[key].name}</span>
-            <div className="bar"><div style={{ width: `${(n / likes.length) * 100}%` }} /></div>
-            <span>{Math.round((n / likes.length) * 100)}%</span>
+            <div className="bar"><div style={{ width: `${p * 100}%` }} /></div>
+            <span>{Math.round(p * 100)}%</span>
           </div>
         ))}
       </div>
 
-      <h3>Your colours</h3>
-      <div className="swatches big">
-        {topColours.map(([c]) => (
-          <span key={c} className="colour-chip">
-            <span className="swatch" style={{ background: SWATCH[c] }} /> {c}
-          </span>
-        ))}
-      </div>
+      {colours.length > 0 && (
+        <div className="chips">
+          {colours.map((c) => (
+            <span key={c.key} className="colour-chip">
+              <span className="swatch" style={{ background: SWATCH[c.key] }} /> {c.label}
+            </span>
+          ))}
+        </div>
+      )}
+      {garments.length > 0 && (
+        <div className="chips">
+          {garments.map((g) => <span key={g.key} className="colour-chip">{g.label}</span>)}
+        </div>
+      )}
 
-      <h3>Shop {season.label} at Next</h3>
-      <div className="shop-links">
+      <h3>More {topStyle.name} for {season.label}</h3>
+      <div className="chips">
         {topStyle.picks[season.key].map((term) => (
-          <a key={term} href={nextSearchUrl(term)} target="_blank" rel="noreferrer">
+          <a key={term} className="colour-chip link" href={nextSearchUrl(term)} target="_blank" rel="noreferrer">
             {term.replace('mens ', '')} →
           </a>
         ))}
-        {topColours[0] && (
-          <a href={nextSearchUrl(`mens ${topColours[0][0].toLowerCase()} ${season.key === 'aw' ? 'jumper' : 'shirt'}`)} target="_blank" rel="noreferrer">
-            {topColours[0][0].toLowerCase()} {season.key === 'aw' ? 'jumpers' : 'shirts'} →
-          </a>
-        )}
       </div>
 
-      <button className="primary" onClick={onRestart}>Swipe again</button>
+      <button className="primary" onClick={onAgain}>Swipe {SESSION_LENGTH} more to sharpen it</button>
+      <button className="secondary" onClick={onReset}>Reset what I've learned</button>
     </div>
   );
 }
 
 export default function App() {
-  const [index, setIndex] = useState(0);
-  const [likes, setLikes] = useState([]);
+  const [session, setSession] = useState(() => startSession(loadModel()));
   const [dir, setDir] = useState('right');
+  const { model, current, queued, swiped } = session;
+  const done = swiped.length >= SESSION_LENGTH;
 
   const swipe = (direction) => {
-    const outfit = OUTFITS[index];
+    if (!current) return;
     setDir(direction);
-    if (direction === 'right') setLikes((l) => [...l, outfit]);
-    setIndex((i) => i + 1);
+    const nextModel = learn(model, current, direction === 'right');
+    saveModel(nextModel);
+
+    const nextSwiped = [...swiped, current.id];
+    const remaining = SESSION_LENGTH - nextSwiped.length;
+    const nextCurrent = remaining > 0 ? queued : null;
+    const nextQueued = remaining > 1
+      ? pickNext(nextModel, OUTFITS, new Set([...nextSwiped, nextCurrent.id]), (nextSwiped.length + 1) / SESSION_LENGTH)
+      : null;
+    setSession({ model: nextModel, current: nextCurrent, queued: nextQueued, swiped: nextSwiped });
   };
 
-  const restart = () => {
-    setIndex(0);
-    setLikes([]);
-  };
-
-  const done = index >= OUTFITS.length;
+  const again = () => setSession(startSession(model));
+  const reset = () => setSession(startSession(clearModel()));
 
   return (
     <div className="app">
       <header>
         <span className="logo">StyleSwipe</span>
-        {!done && <span className="progress">{index + 1} / {OUTFITS.length}</span>}
+        {!done && <span className="progress">{swiped.length + 1} / {SESSION_LENGTH}</span>}
       </header>
 
       {done ? (
-        <Results likes={likes} onRestart={restart} />
+        <Results model={model} swiped={swiped} onAgain={again} onReset={reset} />
       ) : (
         <>
           <div className="deck">
-            {OUTFITS[index + 1] && (
+            {queued && (
               <div className="card behind">
-                <img src={OUTFITS[index + 1].img} alt="" draggable={false} />
+                <img src={queued.img} alt="" draggable={false} />
               </div>
             )}
             <AnimatePresence custom={dir}>
-              <SwipeCard key={OUTFITS[index].id} outfit={OUTFITS[index]} onSwipe={swipe} />
+              <SwipeCard key={current.id} outfit={current} onSwipe={swipe} />
             </AnimatePresence>
           </div>
           <div className="buttons">
             <button className="round nope" onClick={() => swipe('left')} aria-label="Nope">✕</button>
             <button className="round like" onClick={() => swipe('right')} aria-label="Like">♥</button>
           </div>
-          <p className="hint">Swipe right if you'd wear it, left if not</p>
+          <p className="hint">
+            {model.swipes > 0
+              ? `Learning from ${model.swipes} swipes so far`
+              : "Swipe right if you'd wear it, left if not"}
+          </p>
         </>
       )}
     </div>
