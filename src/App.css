@@ -198,3 +198,97 @@ header {
 .shop-look .shop-links a:hover .swatch { border-color: #fff; }
 
 .colour-chip.dislike { color: var(--muted); box-shadow: inset 0 0 0 1px rgba(255, 77, 109, 0.5); }
+
+/* Shop rows: Next link + shopping-list star */
+.shop-row { display: flex; gap: 8px; align-items: stretch; }
+.shop-row a { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; }
+.star {
+  flex-shrink: 0;
+  width: 44px;
+  border: none;
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+.suggestion .star, .shop-look .star, .look .star { background: var(--bg); }
+.star.on { color: #e0a800; }
+.star-hint { margin: 10px 0 0; font-size: 0.75rem; color: var(--muted); }
+
+.save-look {
+  margin-top: 12px;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+}
+.save-look.on { border-color: #ff4d6d; color: #ff4d6d; }
+
+/* Tabs */
+.tabs { width: 100%; display: flex; gap: 6px; margin-bottom: 14px; }
+.tab {
+  flex: 1;
+  padding: 9px 6px;
+  border: none;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.tab.on { background: var(--accent); color: #fff; }
+
+/* Occasion picker */
+.occasions { width: 100%; display: flex; gap: 6px; overflow-x: auto; padding-bottom: 12px; scrollbar-width: none; }
+.occasion {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.occasion.on { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+/* Build around a piece */
+.build, .lookbook { width: 100%; }
+.build h1, .lookbook h1 { margin: 4px 0 8px; font-size: 1.8rem; }
+.pickers { display: grid; grid-template-columns: 3fr 2fr; gap: 10px; margin: 16px 0 8px; }
+.pickers label { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: var(--muted); }
+.pickers select {
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.95rem;
+  text-transform: capitalize;
+}
+.suggestion-img.short { aspect-ratio: 4 / 3; }
+
+/* Lookbook */
+.lookbook h3 { margin: 24px 0 10px; }
+.list-group { margin-bottom: 14px; }
+.look-grid { display: flex; flex-direction: column; gap: 14px; }
+.look {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  background: var(--surface);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.look img { width: 100%; height: 100%; min-height: 150px; object-fit: cover; display: block; }
+.look-body { padding: 12px; min-width: 0; }
+.look-body h4 { margin: 0 0 10px; }
+.look .shop-links { gap: 6px; }
+.look .shop-links a { background: var(--bg); padding: 8px 10px; font-size: 0.85rem; }
+.look .star { width: 36px; }
+.remove { margin-top: 10px; background: none; border: none; color: var(--muted); font-size: 0.8rem; cursor: pointer; padding: 0; text-decoration: underline; }

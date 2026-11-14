@@ -1,13 +1,23 @@
 import { useState } from 'react';
 import { AnimatePresence, motion, useMotionValue, useTransform } from 'framer-motion';
-import { OUTFITS, STYLES, SWATCH, upcomingSeason, nextSearchUrl, itemSearchTerm } from './data';
+import {
+  OUTFITS, STYLES, SWATCH, OCCASIONS, FAMILIES, upcomingSeason, nextSearchUrl, itemSearchTerm,
+  outfitsFor, isSmartCasual, familyOf,
+} from './data';
 import {
   loadModel, saveModel, clearModel, learn, pickNext, suggest,
-  topFeatures, bottomFeatures, styleAffinity,
+  topFeatures, bottomFeatures, styleAffinity, buildAround, predict,
 } from './model';
+import {
+  loadLookbook, saveLookbook, addLook, toggleLook, toggleWanted, pieceKey, parsePiece,
+} from './lookbook';
 import './App.css';
 
 const SESSION_LENGTH = 20;
+const byId = Object.fromEntries(OUTFITS.map((o) => [o.id, o]));
+
+// Leave two unseen outfits in the pool for the final suggestions.
+const sessionLengthFor = (pool) => Math.min(SESSION_LENGTH, pool.length - 2);
 
 const cardVariants = {
   enter: { scale: 0.95, opacity: 0, y: 10 },
@@ -21,10 +31,12 @@ const cardVariants = {
 };
 
 // Start a session: pick the first card and queue up the one behind it.
-function startSession(model) {
-  const current = pickNext(model, OUTFITS, new Set(), 0);
-  const queued = pickNext(model, OUTFITS, new Set([current.id]), 1 / SESSION_LENGTH);
-  return { model, current, queued, swiped: [] };
+function startSession(model, occasion) {
+  const pool = outfitsFor(occasion);
+  const len = sessionLengthFor(pool);
+  const current = pickNext(model, pool, new Set(), 0);
+  const queued = pickNext(model, pool, new Set([current.id]), 1 / len);
+  return { model, occasion, current, queued, swiped: [] };
 }
 
 function Swatches({ colours }) {
@@ -37,6 +49,8 @@ function Swatches({ colours }) {
     </div>
   );
 }
+
+const formalityLabel = (outfit) => (isSmartCasual(outfit) ? 'Smart casual' : 'Casual');
 
 function SwipeCard({ outfit, onSwipe }) {
   const x = useMotionValue(0);
@@ -65,7 +79,8 @@ function SwipeCard({ outfit, onSwipe }) {
       <motion.div className="stamp like" style={{ opacity: likeOpacity }}>LIKE</motion.div>
       <motion.div className="stamp nope" style={{ opacity: nopeOpacity }}>NOPE</motion.div>
       <div className="card-info">
-        <span className="tag">{STYLES[outfit.style].name}</span>
+        <span className="tag">{STYLES[outfit.style].name}</span>{' '}
+        <span className="tag">{formalityLabel(outfit)}</span>
         <h2>{outfit.title}</h2>
         <Swatches colours={outfit.colours} />
       </div>
@@ -73,31 +88,55 @@ function SwipeCard({ outfit, onSwipe }) {
   );
 }
 
-function ShopLinks({ items }) {
+// One Next search button per piece, with a star to add it to the shopping list.
+function ShopLinks({ items, book, onWant }) {
   return (
     <div className="shop-links">
-      {items.map((item) => (
-        <a key={item.garment + item.colour} href={nextSearchUrl(itemSearchTerm(item))} target="_blank" rel="noreferrer">
-          <span className="swatch" style={{ background: SWATCH[item.colour] }} />
-          {item.colour} {item.garment} →
-        </a>
-      ))}
+      {items.map((item) => {
+        const wanted = book.wanted.includes(pieceKey(item));
+        return (
+          <div key={pieceKey(item)} className="shop-row">
+            <a href={nextSearchUrl(itemSearchTerm(item))} target="_blank" rel="noreferrer">
+              <span className="swatch" style={{ background: SWATCH[item.colour] }} />
+              {item.colour} {item.garment} →
+            </a>
+            <button
+              className={`star${wanted ? ' on' : ''}`}
+              onClick={() => onWant(item)}
+              aria-label={wanted ? `Remove ${item.colour} ${item.garment} from shopping list` : `Add ${item.colour} ${item.garment} to shopping list`}
+              title={wanted ? 'On your shopping list' : 'Add to shopping list'}
+            >
+              {wanted ? '★' : '☆'}
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
 }
 
+function SaveLook({ id, book, onToggleLook }) {
+  const saved = book.looks.includes(id);
+  return (
+    <button className={`save-look${saved ? ' on' : ''}`} onClick={() => onToggleLook(id)}>
+      {saved ? '♥ In lookbook' : '♡ Save look'}
+    </button>
+  );
+}
+
 // Shown under the swipe deck: what's in the current photo, with Next searches.
-function ShopTheLook({ outfit }) {
+function ShopTheLook({ outfit, book, onWant }) {
   return (
     <section className="shop-look">
       <p className="shop-label">Shop the look at Next</p>
       <p className="shop-look-desc">{STYLES[outfit.style].blurb}</p>
-      <ShopLinks items={outfit.items} />
+      <ShopLinks items={outfit.items} book={book} onWant={onWant} />
+      <p className="star-hint">☆ adds a piece to your shopping list</p>
     </section>
   );
 }
 
-function Suggestion({ outfit, match, reasons }) {
+function Suggestion({ outfit, match, reasons, book, onWant, onToggleLook }) {
   return (
     <div className="suggestion">
       <div className="suggestion-img">
@@ -105,7 +144,8 @@ function Suggestion({ outfit, match, reasons }) {
         <span className="match">{Math.round(match * 100)}% match</span>
       </div>
       <div className="suggestion-body">
-        <span className="tag dark">{STYLES[outfit.style].name}</span>
+        <span className="tag dark">{STYLES[outfit.style].name}</span>{' '}
+        <span className="tag dark">{formalityLabel(outfit)}</span>
         <h3>{outfit.title}</h3>
         <p className="why">
           {reasons.length
@@ -113,15 +153,16 @@ function Suggestion({ outfit, match, reasons }) {
             : 'A wildcard to test your taste'}
         </p>
         <p className="shop-label">Shop the look at Next</p>
-        <ShopLinks items={outfit.items} />
+        <ShopLinks items={outfit.items} book={book} onWant={onWant} />
+        <SaveLook id={outfit.id} book={book} onToggleLook={onToggleLook} />
       </div>
     </div>
   );
 }
 
-function Results({ model, swiped, onAgain, onReset }) {
+function Results({ model, occasion, swiped, book, onWant, onToggleLook, onAgain, onReset }) {
   const season = upcomingSeason();
-  const picks = suggest(model, OUTFITS, new Set(swiped), 2);
+  const picks = suggest(model, outfitsFor(occasion), new Set(swiped), 2);
   const affinity = styleAffinity(model).slice(0, 4);
   const colours = topFeatures(model, 'colour');
   const garments = topFeatures(model, 'garment', 5);
@@ -133,10 +174,14 @@ function Results({ model, swiped, onAgain, onReset }) {
 
   return (
     <div className="results">
-      <p className="eyebrow">Learned from {model.swipes} swipes</p>
+      <p className="eyebrow">
+        Learned from {model.swipes} swipes{occasion !== 'any' && ` · ${OCCASIONS[occasion].name}`}
+      </p>
       <h1>Your 2 outfits</h1>
 
-      {picks.map((p) => <Suggestion key={p.outfit.id} {...p} />)}
+      {picks.map((p) => (
+        <Suggestion key={p.outfit.id} {...p} book={book} onWant={onWant} onToggleLook={onToggleLook} />
+      ))}
 
       <h3>What I've learned about you</h3>
       <div className="bars">
@@ -200,47 +245,212 @@ function Results({ model, swiped, onAgain, onReset }) {
         ))}
       </div>
 
-      <button className="primary" onClick={onAgain}>Swipe {SESSION_LENGTH} more to sharpen it</button>
+      <button className="primary" onClick={onAgain}>Swipe more to sharpen it</button>
       <button className="secondary" onClick={onReset}>Reset what I've learned</button>
     </div>
   );
 }
 
+function OccasionPicker({ value, onChange }) {
+  return (
+    <div className="occasions" role="radiogroup" aria-label="Occasion">
+      {Object.entries(OCCASIONS).map(([key, { name }]) => (
+        <button
+          key={key}
+          role="radio"
+          aria-checked={value === key}
+          className={`occasion${value === key ? ' on' : ''}`}
+          onClick={() => onChange(key)}
+        >
+          {name}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// Every garment/colour combination in the photo set, for the "I own…" pickers.
+const GARMENT_COLOURS = OUTFITS.flatMap((o) => o.items).reduce((acc, { garment, colour }) => {
+  (acc[garment] ??= new Set()).add(colour);
+  return acc;
+}, {});
+
+function BuildAround({ model, book, onWant, onToggleLook }) {
+  const [garment, setGarment] = useState('');
+  const [colour, setColour] = useState('');
+  const colours = garment ? [...GARMENT_COLOURS[garment]].sort() : [];
+  const results = garment ? buildAround(model, OUTFITS, { garment, colour }) : [];
+
+  return (
+    <div className="build">
+      <h1>Build around a piece</h1>
+      <p className="blurb">
+        Pick something you already own. I'll show looks that use it, picked for your taste,
+        and link the pieces you'd need to finish the outfit.
+      </p>
+      <div className="pickers">
+        <label>
+          <span>I own a…</span>
+          <select value={garment} onChange={(e) => { setGarment(e.target.value); setColour(''); }}>
+            <option value="">Choose a piece</option>
+            {Object.entries(FAMILIES).map(([family, list]) => (
+              <optgroup key={family} label={family}>
+                {list.filter((g) => GARMENT_COLOURS[g]).map((g) => <option key={g} value={g}>{g}</option>)}
+              </optgroup>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span>in…</span>
+          <select value={colour} onChange={(e) => setColour(e.target.value)} disabled={!garment}>
+            <option value="">Any colour</option>
+            {colours.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </label>
+      </div>
+
+      {results.map(({ outfit, match }) => {
+        const rest = outfit.items.filter((i) => i !== match);
+        const exact = match.garment === garment;
+        return (
+          <div key={outfit.id} className="suggestion">
+            <div className="suggestion-img short">
+              <img src={outfit.img} alt={outfit.title} />
+              <span className="match">{Math.round(predict(model, outfit) * 100)}% your taste</span>
+            </div>
+            <div className="suggestion-body">
+              <span className="tag dark">{formalityLabel(outfit)}</span>
+              <h3>{outfit.title}</h3>
+              <p className="why">
+                Uses <strong>{match.colour} {match.garment}</strong>
+                {exact ? '' : ` (swap in your ${colour ? colour.toLowerCase() + ' ' : ''}${garment})`}
+              </p>
+              {rest.length > 0 ? (
+                <>
+                  <p className="shop-label">Complete the look at Next</p>
+                  <ShopLinks items={rest} book={book} onWant={onWant} />
+                </>
+              ) : (
+                <p className="why">Your piece is the whole look.</p>
+              )}
+              <SaveLook id={outfit.id} book={book} onToggleLook={onToggleLook} />
+            </div>
+          </div>
+        );
+      })}
+      {garment && results.length === 0 && <p className="blurb">No looks use that yet.</p>}
+    </div>
+  );
+}
+
+function Lookbook({ book, onWant, onToggleLook, onClearList }) {
+  const looks = book.looks.map((id) => byId[id]).filter(Boolean);
+  const wanted = book.wanted.map(parsePiece);
+  const groups = Object.keys(FAMILIES)
+    .concat('Other')
+    .map((family) => [family, wanted.filter((p) => familyOf(p.garment) === family)])
+    .filter(([, list]) => list.length);
+
+  return (
+    <div className="lookbook">
+      <h1>Lookbook</h1>
+
+      <h3>Shopping list{wanted.length > 0 && ` (${wanted.length})`}</h3>
+      {wanted.length === 0 ? (
+        <p className="blurb">Tap ☆ next to any piece to add it here.</p>
+      ) : (
+        <>
+          {groups.map(([family, list]) => (
+            <div key={family} className="list-group">
+              <p className="shop-label">{family}</p>
+              <ShopLinks items={list} book={book} onWant={onWant} />
+            </div>
+          ))}
+          <button className="secondary" onClick={onClearList}>Clear shopping list</button>
+        </>
+      )}
+
+      <h3>Saved looks{looks.length > 0 && ` (${looks.length})`}</h3>
+      {looks.length === 0 && <p className="blurb">Looks you swipe right on are saved here.</p>}
+      <div className="look-grid">
+        {looks.map((outfit) => (
+          <div key={outfit.id} className="look">
+            <img src={outfit.img} alt={outfit.title} />
+            <div className="look-body">
+              <h4>{outfit.title}</h4>
+              <ShopLinks items={outfit.items} book={book} onWant={onWant} />
+              <button className="remove" onClick={() => onToggleLook(outfit.id)}>Remove look</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
-  const [session, setSession] = useState(() => startSession(loadModel()));
+  const [tab, setTab] = useState('swipe');
+  const [session, setSession] = useState(() => startSession(loadModel(), 'any'));
+  const [book, setBookState] = useState(loadLookbook);
   const [dir, setDir] = useState('right');
-  const { model, current, queued, swiped } = session;
-  const done = swiped.length >= SESSION_LENGTH;
+  const { model, occasion, current, queued, swiped } = session;
+  const pool = outfitsFor(occasion);
+  const sessionLength = sessionLengthFor(pool);
+  const done = swiped.length >= sessionLength;
+
+  const setBook = (next) => {
+    setBookState(next);
+    saveLookbook(next);
+  };
+  const want = (piece) => setBook(toggleWanted(book, piece));
+  const toggleSaved = (id) => setBook(toggleLook(book, id));
 
   const swipe = (direction) => {
     if (!current) return;
     setDir(direction);
-    const nextModel = learn(model, current, direction === 'right');
+    const liked = direction === 'right';
+    const nextModel = learn(model, current, liked);
     saveModel(nextModel);
+    if (liked) setBook(addLook(book, current.id));
 
     const nextSwiped = [...swiped, current.id];
-    const remaining = SESSION_LENGTH - nextSwiped.length;
+    const remaining = sessionLength - nextSwiped.length;
     const nextCurrent = remaining > 0 ? queued : null;
     const nextQueued = remaining > 1
-      ? pickNext(nextModel, OUTFITS, new Set([...nextSwiped, nextCurrent.id]), (nextSwiped.length + 1) / SESSION_LENGTH)
+      ? pickNext(nextModel, pool, new Set([...nextSwiped, nextCurrent.id]), (nextSwiped.length + 1) / sessionLength)
       : null;
-    setSession({ model: nextModel, current: nextCurrent, queued: nextQueued, swiped: nextSwiped });
+    setSession({ ...session, model: nextModel, current: nextCurrent, queued: nextQueued, swiped: nextSwiped });
   };
 
-  const again = () => setSession(startSession(model));
-  const reset = () => setSession(startSession(clearModel()));
+  const again = () => setSession(startSession(model, occasion));
+  const reset = () => setSession(startSession(clearModel(), occasion));
+  const changeOccasion = (key) => setSession(startSession(model, key));
 
   return (
     <div className="app">
       <header>
         <span className="logo">StyleSwipe</span>
-        {!done && <span className="progress">{swiped.length + 1} / {SESSION_LENGTH}</span>}
+        {tab === 'swipe' && !done && <span className="progress">{swiped.length + 1} / {sessionLength}</span>}
       </header>
+      <nav className="tabs">
+        {[['swipe', 'Swipe'], ['build', 'Build a look'], ['lookbook', `Lookbook${book.looks.length ? ` (${book.looks.length})` : ''}`]].map(([key, label]) => (
+          <button key={key} className={`tab${tab === key ? ' on' : ''}`} onClick={() => setTab(key)}>{label}</button>
+        ))}
+      </nav>
 
-      {done ? (
-        <Results model={model} swiped={swiped} onAgain={again} onReset={reset} />
+      {tab === 'build' && <BuildAround model={model} book={book} onWant={want} onToggleLook={toggleSaved} />}
+      {tab === 'lookbook' && (
+        <Lookbook book={book} onWant={want} onToggleLook={toggleSaved} onClearList={() => setBook({ ...book, wanted: [] })} />
+      )}
+
+      {tab === 'swipe' && (done ? (
+        <Results
+          model={model} occasion={occasion} swiped={swiped} book={book}
+          onWant={want} onToggleLook={toggleSaved} onAgain={again} onReset={reset}
+        />
       ) : (
         <>
+          <OccasionPicker value={occasion} onChange={changeOccasion} />
           <div className="deck">
             {queued && (
               <div className="card behind">
@@ -260,9 +470,9 @@ export default function App() {
               ? `Learning from ${model.swipes} swipes so far`
               : "Swipe right if you'd wear it, left if not"}
           </p>
-          <ShopTheLook outfit={current} />
+          <ShopTheLook outfit={current} book={book} onWant={want} />
         </>
-      )}
+      ))}
     </div>
   );
 }
