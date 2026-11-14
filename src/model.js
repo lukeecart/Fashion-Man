@@ -5,7 +5,7 @@
 // After every swipe we take one gradient step, so it learns as you go.
 // Weights are saved in localStorage so it keeps learning across visits.
 
-import { STYLES } from './data.js';
+import { STYLES, familyOf } from './data.js';
 
 const STORAGE_KEY = 'styleswipe-model-v1';
 const LEARNING_RATE = 1.0;
@@ -191,4 +191,26 @@ export function styleAffinity(model) {
   return Object.keys(STYLES)
     .map((key) => ({ key, p: sigmoid(model.bias + (model.w[`style:${key}`] || 0)) }))
     .sort((a, b) => b.p - a.p);
+}
+
+// Outfits that work with a piece you already own. Same garment beats same
+// family (e.g. any jacket), matching colour adds a bit, and the model's
+// prediction breaks ties so results lean towards your taste.
+export function buildAround(model, pool, piece, count = 6) {
+  const family = familyOf(piece.garment);
+  return pool
+    .map((outfit) => {
+      let best = 0;
+      let match = null;
+      for (const item of outfit.items) {
+        const g = item.garment === piece.garment ? 2 : familyOf(item.garment) === family ? 1 : 0;
+        if (!g) continue;
+        const s = g + (piece.colour && item.colour === piece.colour ? 1 : 0);
+        if (s > best) { best = s; match = item; }
+      }
+      return { outfit, match, score: best + predict(model, outfit) };
+    })
+    .filter((r) => r.match)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, count);
 }

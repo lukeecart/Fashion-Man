@@ -1,6 +1,7 @@
-// Outfit photos are from Unsplash (free to use). Every look is modern smart
-// casual (no suits). Each outfit lists its pieces (garment + colour); the model
-// learns from these, and they become Next search links in the suggestions.
+// Outfit photos are from Unsplash (free to use). Looks are mostly smart casual
+// with some casual (no suits) — see formalityScore below. Each outfit lists its
+// pieces (garment + colour) as generic menswear terms for Next searches; the
+// model learns from these, and they become Next search links.
 const img = (id) => `https://images.unsplash.com/photo-${id}?w=800&q=80&fit=crop`;
 
 export const STYLES = {
@@ -177,3 +178,54 @@ export const nextSearchUrl = (term) =>
   `https://www.next.co.uk/search?w=${encodeURIComponent(term)}`;
 
 export const itemSearchTerm = ({ garment, colour }) => `mens ${colour.toLowerCase()} ${garment}`;
+
+// --- Formality & occasions -------------------------------------------------
+// Each garment nudges an outfit smarter (+) or more casual (−). Outfits that
+// net out at 0 or above count as smart casual, below 0 as casual.
+const FORMALITY = {
+  blazer: 2, 'check blazer': 2, overcoat: 2, 'trench coat': 2, loafers: 2,
+  'oxford shirt': 1, shirt: 1, 'linen shirt': 1, trousers: 1, chinos: 1, polo: 1,
+  'chelsea boots': 1, 'roll neck': 1, 'v-neck jumper': 1, cardigan: 1,
+  't-shirt': -1, jeans: -1, trainers: -1, 'denim jacket': -1, 'denim shirt': -1,
+  'bomber jacket': -1, 'padded jacket': -1, 'trucker jacket': -1, 'field jacket': -1,
+  'chore jacket': -1, 'check overshirt': -1, 'cargo trousers': -2, 'denim gilet': -2,
+};
+export const formalityScore = (outfit) =>
+  outfit.items.reduce((s, i) => s + (FORMALITY[i.garment] || 0), 0);
+export const isSmartCasual = (outfit) => formalityScore(outfit) >= 0;
+
+const has = (outfit, garments) => outfit.items.some((i) => garments.includes(i.garment));
+
+export const OCCASIONS = {
+  any: { name: 'Anything', test: () => true },
+  work: {
+    name: 'Work',
+    test: (o) => formalityScore(o) >= 1 &&
+      !has(o, ['t-shirt', 'cargo trousers', 'denim gilet', 'denim jacket', 'bomber jacket']),
+  },
+  date: { name: 'Date night', test: (o) => formalityScore(o) >= 0 && o.tone !== 'light' },
+  weekend: { name: 'Weekend', test: (o) => formalityScore(o) <= 1 },
+  dressy: {
+    name: 'Dressed up',
+    test: (o) => formalityScore(o) >= 2 || has(o, ['blazer', 'check blazer', 'overcoat', 'trench coat', 'loafers']),
+  },
+};
+
+export const outfitsFor = (occasion) => OUTFITS.filter(OCCASIONS[occasion].test);
+
+// --- Garment families (for "Build around a piece") -------------------------
+export const FAMILIES = {
+  Blazers: ['blazer', 'check blazer'],
+  Coats: ['overcoat', 'trench coat'],
+  Jackets: ['jacket', 'leather jacket', 'suede jacket', 'harrington jacket', 'bomber jacket',
+    'field jacket', 'padded jacket', 'denim jacket', 'trucker jacket', 'denim gilet'],
+  'Overshirts & chore jackets': ['overshirt', 'check overshirt', 'chore jacket'],
+  Shirts: ['shirt', 'oxford shirt', 'linen shirt', 'printed shirt', 'striped shirt', 'denim shirt'],
+  'Tops & polos': ['t-shirt', 'polo', 'henley'],
+  Knitwear: ['jumper', 'roll neck', 'cardigan', 'striped jumper', 'v-neck jumper'],
+  Trousers: ['trousers', 'chinos', 'wide leg trousers', 'cargo trousers', 'jeans'],
+  Shoes: ['trainers', 'loafers', 'boots', 'chelsea boots'],
+  Accessories: ['scarf'],
+};
+export const familyOf = (garment) =>
+  Object.keys(FAMILIES).find((f) => FAMILIES[f].includes(garment)) ?? 'Other';
