@@ -177,6 +177,15 @@ export function topFeatures(model, group, limit = 4) {
     .map(([f, w]) => ({ key: f.split(':')[1], label: labelFor(f), weight: w }));
 }
 
+// Most negatively-weighted features in a group: the things you swipe away.
+export function bottomFeatures(model, group, limit = 4) {
+  return Object.entries(model.w)
+    .filter(([f, w]) => f.startsWith(`${group}:`) && w < -0.05)
+    .sort((a, b) => a[1] - b[1])
+    .slice(0, limit)
+    .map(([f, w]) => ({ key: f.split(':')[1], label: labelFor(f), weight: w }));
+}
+
 // Style affinity 0–100%, from each style's predicted like-probability on its own.
 export function styleAffinity(model) {
   return Object.keys(STYLES)
