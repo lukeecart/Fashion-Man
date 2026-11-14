@@ -1,6 +1,6 @@
 // Outfit photos are from Unsplash (free to use). Looks are mostly smart casual
 // with some casual (no suits) — see formalityScore below. Each outfit lists its
-// pieces (garment + colour), all everyday menswear lines that Next carries; the
+// pieces (garment + colour) as generic menswear terms for Next searches; the
 // model learns from these, and they become Next search links.
 const img = (id) => `https://images.unsplash.com/photo-${id}?w=800&q=80&fit=crop`;
 
