@@ -3,7 +3,7 @@ import { AnimatePresence, motion, useMotionValue, useTransform } from 'framer-mo
 import { OUTFITS, STYLES, SWATCH, upcomingSeason, nextSearchUrl, itemSearchTerm } from './data';
 import {
   loadModel, saveModel, clearModel, learn, pickNext, suggest,
-  topFeatures, styleAffinity,
+  topFeatures, bottomFeatures, styleAffinity,
 } from './model';
 import './App.css';
 
@@ -73,6 +73,30 @@ function SwipeCard({ outfit, onSwipe }) {
   );
 }
 
+function ShopLinks({ items }) {
+  return (
+    <div className="shop-links">
+      {items.map((item) => (
+        <a key={item.garment + item.colour} href={nextSearchUrl(itemSearchTerm(item))} target="_blank" rel="noreferrer">
+          <span className="swatch" style={{ background: SWATCH[item.colour] }} />
+          {item.colour} {item.garment} →
+        </a>
+      ))}
+    </div>
+  );
+}
+
+// Shown under the swipe deck: what's in the current photo, with Next searches.
+function ShopTheLook({ outfit }) {
+  return (
+    <section className="shop-look">
+      <p className="shop-label">Shop the look at Next</p>
+      <p className="shop-look-desc">{STYLES[outfit.style].blurb}</p>
+      <ShopLinks items={outfit.items} />
+    </section>
+  );
+}
+
 function Suggestion({ outfit, match, reasons }) {
   return (
     <div className="suggestion">
@@ -89,14 +113,7 @@ function Suggestion({ outfit, match, reasons }) {
             : 'A wildcard to test your taste'}
         </p>
         <p className="shop-label">Shop the look at Next</p>
-        <div className="shop-links">
-          {outfit.items.map((item) => (
-            <a key={item.garment + item.colour} href={nextSearchUrl(itemSearchTerm(item))} target="_blank" rel="noreferrer">
-              <span className="swatch" style={{ background: SWATCH[item.colour] }} />
-              {item.colour} {item.garment} →
-            </a>
-          ))}
-        </div>
+        <ShopLinks items={outfit.items} />
       </div>
     </div>
   );
@@ -108,6 +125,10 @@ function Results({ model, swiped, onAgain, onReset }) {
   const affinity = styleAffinity(model).slice(0, 4);
   const colours = topFeatures(model, 'colour');
   const garments = topFeatures(model, 'garment', 5);
+  const dislikedStyles = bottomFeatures(model, 'style', 3);
+  const dislikedColours = bottomFeatures(model, 'colour');
+  const dislikedGarments = bottomFeatures(model, 'garment', 5);
+  const hasDislikes = dislikedStyles.length + dislikedColours.length + dislikedGarments.length > 0;
   const topStyle = STYLES[affinity[0].key];
 
   return (
@@ -141,6 +162,33 @@ function Results({ model, swiped, onAgain, onReset }) {
         <div className="chips">
           {garments.map((g) => <span key={g.key} className="colour-chip">{g.label}</span>)}
         </div>
+      )}
+
+      <h3>What you're not into</h3>
+      {hasDislikes ? (
+        <>
+          {dislikedStyles.length > 0 && (
+            <div className="chips">
+              {dislikedStyles.map((st) => <span key={st.key} className="colour-chip dislike">✕ {st.label}</span>)}
+            </div>
+          )}
+          {dislikedColours.length > 0 && (
+            <div className="chips">
+              {dislikedColours.map((c) => (
+                <span key={c.key} className="colour-chip dislike">
+                  <span className="swatch" style={{ background: SWATCH[c.key] }} /> {c.label}
+                </span>
+              ))}
+            </div>
+          )}
+          {dislikedGarments.length > 0 && (
+            <div className="chips">
+              {dislikedGarments.map((g) => <span key={g.key} className="colour-chip dislike">✕ {g.label}</span>)}
+            </div>
+          )}
+        </>
+      ) : (
+        <p className="blurb">No strong dislikes yet. Swipe left more to teach me.</p>
       )}
 
       <h3>More {topStyle.name} for {season.label}</h3>
@@ -212,6 +260,7 @@ export default function App() {
               ? `Learning from ${model.swipes} swipes so far`
               : "Swipe right if you'd wear it, left if not"}
           </p>
+          <ShopTheLook outfit={current} />
         </>
       )}
     </div>
